@@ -20,10 +20,6 @@ final class LogIngestionController extends AbstractController
         private readonly LogIngestionServiceInterface $ingestionService,
     ) {}
 
-    /**
-     * Принимает батч записей логов, валидирует и публикует каждую запись
-     * асинхронно в RabbitMQ через Symfony Messenger
-     */
     #[Route('/ingest', name: 'ingest', methods: ['POST'])]
     public function ingest(Request $request): JsonResponse
     {

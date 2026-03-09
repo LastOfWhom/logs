@@ -11,10 +11,6 @@ use App\Contract\LogValidatorInterface;
 use App\DTO\IngestResponseDTO;
 use App\DTO\LogEntryDTO;
 
-/**
- * Класс намеренно не содержит бизнес-логики —
- * каждая ответственность делегирована отдельному коллаборатору (SRP + DIP).
- */
 final class LogIngestionService implements LogIngestionServiceInterface
 {
     public function __construct(
