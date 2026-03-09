@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Controller;
+namespace App\Http\Controller;
 
 use App\Contract\LogIngestionServiceInterface;
 use App\Exception\PublishException;
@@ -49,7 +49,7 @@ final class LogIngestionController extends AbstractController
                 ],
                 Response::HTTP_BAD_REQUEST,
             );
-        } catch (PublishException $e) {
+        } catch (PublishException) {
             return $this->json(
                 [
                     'status'  => 'error',
@@ -61,8 +61,8 @@ final class LogIngestionController extends AbstractController
 
         return $this->json(
             [
-                'status'    => $response->status,
-                'batch_id'  => $response->batchId,
+                'status'     => $response->status,
+                'batch_id'   => $response->batchId,
                 'logs_count' => $response->logsCount,
             ],
             Response::HTTP_ACCEPTED,
