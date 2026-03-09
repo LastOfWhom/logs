@@ -7,7 +7,7 @@
 
 ```bash
 # 1. Клонировать репозиторий
-git clone <repo-url> log-service && cd log-service
+git clone git@github.com:LastOfWhom/logs.git
 
 # 2. Создать .env
 make env
