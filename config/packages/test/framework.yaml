@@ -1,0 +1,3 @@
+# Required for Symfony WebTestCase (KernelBrowser / createClient()).
+framework:
+    test: true

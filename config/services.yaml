@@ -1,0 +1,31 @@
+services:
+    # -------------------------------------------------------------------------
+    # Defaults: autowire + autoconfigure for everything under src/
+    # -------------------------------------------------------------------------
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/Kernel.php'
+            - '../src/DTO/'
+            - '../src/Enum/'
+            - '../src/Exception/'
+            - '../src/Message/'
+
+    # -------------------------------------------------------------------------
+    # Interface → Implementation bindings (Dependency Inversion Principle)
+    # -------------------------------------------------------------------------
+    App\Contract\BatchIdGeneratorInterface:
+        alias: App\Service\BatchIdGeneratorService
+
+    App\Contract\LogValidatorInterface:
+        alias: App\Service\LogValidatorService
+
+    App\Contract\LogPublisherInterface:
+        alias: App\Service\LogPublisherService
+
+    App\Contract\LogIngestionServiceInterface:
+        alias: App\Service\LogIngestionService

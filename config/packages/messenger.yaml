@@ -1,0 +1,37 @@
+framework:
+    messenger:
+        # -----------------------------------------------------------------------
+        # Transports
+        # -----------------------------------------------------------------------
+        transports:
+            async:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    # Exchange: "logs" with type=direct.
+                    # Messages are routed by routing_key to bound queues.
+                    exchange:
+                        name: logs
+                        type: direct
+                        default_publish_routing_key: ingest
+
+                    # Queue declaration.
+                    # x-max-priority enables per-message priorities (1–3).
+                    # durable: true ensures messages survive broker restarts.
+                    queues:
+                        logs.ingest:
+                            binding_keys: [ingest]
+                            arguments:
+                                x-max-priority: 3
+
+                # Automatic retry with exponential back-off.
+                retry_strategy:
+                    max_retries: 3
+                    delay: 1000        # ms before first retry
+                    multiplier: 2      # delay doubles each retry
+                    max_delay: 30000   # cap at 30 s
+
+        # -----------------------------------------------------------------------
+        # Routing: which transport handles each message class
+        # -----------------------------------------------------------------------
+        routing:
+            App\Message\LogMessage: async

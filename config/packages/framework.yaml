@@ -1,0 +1,13 @@
+framework:
+    secret: '%env(APP_SECRET)%'
+    http_method_override: false
+
+    # UTF-8 content type for all JSON responses
+    default_locale: en
+
+    router:
+        utf8: true
+
+    # Disable sessions (pure API service)
+    session: false
+    csrf_protection: false
