@@ -9,6 +9,7 @@ use App\Service\LogValidatorService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Validator\Validation;
 
 final class LogValidatorTest extends TestCase
 {
@@ -16,7 +17,11 @@ final class LogValidatorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->validator = new LogValidatorService();
+        $validator = Validation::createValidatorBuilder()
+            ->enableAttributeMapping()
+            ->getValidator();
+
+        $this->validator = new LogValidatorService($validator);
     }
 
     // validateEntry — успешные сценарии
