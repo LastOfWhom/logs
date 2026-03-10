@@ -1,5 +1,3 @@
-# Override transport for test environment.
-# Uses in-memory transport so tests never touch RabbitMQ.
 framework:
     messenger:
         transports:

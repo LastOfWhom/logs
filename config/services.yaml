@@ -29,3 +29,11 @@ services:
 
     App\Contract\LogIngestionServiceInterface:
         alias: App\Service\LogIngestionService
+
+    PhpAmqpLib\Connection\AMQPLazyConnection:
+        arguments:
+            - '%env(RABBITMQ_HOST)%'
+            - '%env(int:RABBITMQ_PORT)%'
+            - '%env(RABBITMQ_USER)%'
+            - '%env(RABBITMQ_PASSWORD)%'
+            - '%env(RABBITMQ_VHOST)%'

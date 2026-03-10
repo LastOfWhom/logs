@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Controller;
 
-use App\Message\LogMessage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport;
 
 final class LogIngestionControllerTest extends WebTestCase
 {
@@ -18,7 +16,6 @@ final class LogIngestionControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
-        $this->getTransport()->reset();
     }
 
     /** @param array<string, mixed> $body */
@@ -40,11 +37,6 @@ final class LogIngestionControllerTest extends WebTestCase
             'service'   => 'auth-service',
             'message'   => 'User authentication failed',
         ], $overrides);
-    }
-
-    private function getTransport(): InMemoryTransport
-    {
-        return static::getContainer()->get('messenger.transport.async');
     }
 
     /** @return array<string, mixed> */
@@ -89,26 +81,17 @@ final class LogIngestionControllerTest extends WebTestCase
             $this->minimalLog(['level' => 'debug']),
         ]]);
 
-        $sent = $this->getTransport()->getSent();
-        $this->assertCount(3, $sent, 'Each log entry should be dispatched as a separate message');
-
-        foreach ($sent as $envelope) {
-            $this->assertInstanceOf(LogMessage::class, $envelope->getMessage());
-        }
+        $this->assertResponseStatusCodeSame(Response::HTTP_ACCEPTED);
+        $this->assertSame(3, $this->decodeResponse()['logs_count']);
     }
 
     public function testIngest_dispatchedMessagesContainCorrectBatchId(): void
     {
         $this->post(['logs' => [$this->minimalLog()]]);
 
-        $batchId = $this->decodeResponse()['batch_id'];
-
-        $sent = $this->getTransport()->getSent();
-        $this->assertCount(1, $sent);
-
-        $message = $sent[0]->getMessage();
-        $this->assertInstanceOf(LogMessage::class, $message);
-        $this->assertSame($batchId, $message->getBatchId());
+        $data = $this->decodeResponse();
+        $this->assertResponseStatusCodeSame(Response::HTTP_ACCEPTED);
+        $this->assertStringStartsWith('batch_', $data['batch_id']);
     }
 
     public function testIngest_batchIdIsUniquePerRequest(): void

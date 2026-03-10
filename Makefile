@@ -10,9 +10,6 @@ export APP_ENV    ?= dev
 export APP_SECRET ?= changeme32charsecretkey00000000
 export APP_DEBUG  ?= 1
 
-# Symfony Messenger / RabbitMQ
-export MESSENGER_TRANSPORT_DSN ?= amqp://guest:guest@rabbitmq:5672/%2f
-
 # RabbitMQ
 export RABBITMQ_USER              ?= guest
 export RABBITMQ_PASSWORD          ?= guest
@@ -30,14 +27,16 @@ all:
 	@printf '    %-10s %s\n' "env"   "-- Создать .env из переменных по умолчанию"
 	@echo ""
 	@echo "\033[1mЖизненный цикл\033[0m"
-	@printf '    %-10s %s\n' "build" "-- Собрать образы и запустить контейнеры (первый запуск)"
-	@printf '    %-10s %s\n' "start" "-- Запустить контейнеры"
-	@printf '    %-10s %s\n' "stop"  "-- Остановить контейнеры (данные сохраняются)"
-	@printf '    %-10s %s\n' "down"  "-- Удалить контейнеры и сети"
+	@printf '    %-10s %s\n' "build"   "-- Собрать образы и запустить контейнеры"
+	@printf '    %-10s %s\n' "rebuild" "-- Пересобрать образы без кеша"
+	@printf '    %-10s %s\n' "start"   "-- Запустить контейнеры"
+	@printf '    %-10s %s\n' "stop"    "-- Остановить контейнеры (данные сохраняются)"
+	@printf '    %-10s %s\n' "down"    "-- Удалить контейнеры и сети"
 	@echo ""
 	@echo "\033[1mРазработка\033[0m"
-	@printf '    %-10s %s\n' "shell" "-- Открыть консоль внутри контейнера app"
-	@printf '    %-10s %s\n' "test"  "-- Запустить тесты"
+	@printf '    %-10s %s\n' "composer" "-- Установить зависимости composer"
+	@printf '    %-10s %s\n' "shell"    "-- Открыть консоль внутри контейнера app"
+	@printf '    %-10s %s\n' "test"     "-- Запустить тесты"
 
 env:
 	@echo "# Окружение приложения"                                   > .env
@@ -60,9 +59,11 @@ env:
 	@echo "NGINX_PORT=$(NGINX_PORT)"                                 >> .env
 
 build:
+	$(DOCKER_COMPOSE) up -d --build
+
+rebuild:
 	$(DOCKER_COMPOSE) build --no-cache
 	$(DOCKER_COMPOSE) up -d
-	$(DOCKER_COMPOSE) exec app sh -c 'until [ -f vendor/autoload.php ]; do sleep 1; done'
 
 start:
 	$(DOCKER_COMPOSE) up -d
@@ -72,6 +73,9 @@ stop:
 
 down:
 	$(DOCKER_COMPOSE) down
+
+composer:
+	$(DOCKER_COMPOSE) exec app composer install --no-interaction --prefer-dist
 
 shell:
 	$(DOCKER_COMPOSE) exec app sh

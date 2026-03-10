@@ -8,27 +8,50 @@ use App\Contract\LogPublisherInterface;
 use App\DTO\LogEntryDTO;
 use App\Exception\PublishException;
 use App\Message\LogMessage;
-use Symfony\Component\Messenger\Bridge\Amqp\Transport\AmqpStamp;
-use Symfony\Component\Messenger\Exception\ExceptionInterface as MessengerException;
-use Symfony\Component\Messenger\MessageBusInterface;
+use PhpAmqpLib\Connection\AMQPLazyConnection;
+use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 
-/**
- * Публикует записи логов в RabbitMQ через Symfony Messenger
- */
 final class LogPublisherService implements LogPublisherInterface
 {
+    private const EXCHANGE    = 'logs';
+    private const QUEUE       = 'logs.ingest';
+    private const ROUTING_KEY = 'ingest';
+
     public function __construct(
-        private readonly MessageBusInterface $messageBus,
+        private readonly AMQPLazyConnection $connection,
     ) {}
 
     public function publishBatch(array $logs, string $batchId): void
     {
-        foreach ($logs as $log) {
-            $this->publishOne($log, $batchId);
+        try {
+            $channel = $this->connection->channel();
+
+            $channel->exchange_declare(self::EXCHANGE, 'direct', false, true, false);
+            $channel->queue_declare(
+                self::QUEUE, false, true, false, false, false,
+                new AMQPTable(['x-max-priority' => 3]),
+            );
+            $channel->queue_bind(self::QUEUE, self::EXCHANGE, self::ROUTING_KEY);
+
+            foreach ($logs as $log) {
+                $channel->basic_publish(
+                    $this->buildMessage($log, $batchId),
+                    self::EXCHANGE,
+                    self::ROUTING_KEY,
+                );
+            }
+
+            $channel->close();
+        } catch (\Exception $e) {
+            throw new PublishException(
+                sprintf('Failed to publish logs: %s', $e->getMessage()),
+                previous: $e,
+            );
         }
     }
 
-    private function publishOne(LogEntryDTO $log, string $batchId): void
+    private function buildMessage(LogEntryDTO $log, string $batchId): AMQPMessage
     {
         $message = new LogMessage(
             log:      $log->toArray(),
@@ -36,19 +59,13 @@ final class LogPublisherService implements LogPublisherInterface
             priority: $log->level->getPriority(),
         );
 
-        try {
-            $this->messageBus->dispatch($message, [
-                new AmqpStamp(
-                    routingKey: 'ingest',
-                    flags:      AMQP_NOPARAM,
-                    attributes: ['priority' => $log->level->getPriority()],
-                ),
-            ]);
-        } catch (MessengerException $e) {
-            throw new PublishException(
-                sprintf('Failed to dispatch log message: %s', $e->getMessage()),
-                previous: $e,
-            );
-        }
+        return new AMQPMessage(
+            json_encode($message->getLog() + $message->toMetadataArray(), JSON_THROW_ON_ERROR),
+            [
+                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+                'priority'      => $message->getPriority(),
+                'content_type'  => 'application/json',
+            ],
+        );
     }
 }
